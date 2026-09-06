@@ -1,0 +1,52 @@
+@namespace PaleyExpressionsUI.Web.Components.Shared
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div @ref="editorDiv" id="@Id" class="form-control code-textarea" style="height:@Height;"></div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "codeEditor";
+
+    [Parameter]
+    public string Height { get; set; } = "12rem";
+
+    [Parameter]
+    public string? InitialValue { get; set; }
+
+    private ElementReference editorDiv;
+    private bool created = false;
+
+    public async Task CreateAsync(string initialValue = "")
+    {
+        if (!created)
+        {
+            await JS.InvokeVoidAsync("aceInterop.create", Id, initialValue ?? "");
+            created = true;
+        }
+    }
+
+    public ValueTask<string?> GetValueAsync()
+        => JS.InvokeAsync<string?>("aceInterop.getValue", Id);
+
+    public ValueTask SetValueAsync(string val)
+        => JS.InvokeVoidAsync("aceInterop.setValue", Id, val ?? "");
+
+    public ValueTask ResizeAsync()
+        => JS.InvokeVoidAsync("aceInterop.resize", Id);
+
+    public ValueTask FocusAsync()
+        => JS.InvokeVoidAsync("aceInterop.focus", Id);
+
+    public ValueTask DisposeAsync()
+        => JS.InvokeVoidAsync("aceInterop.dispose", Id);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Create the editor with the provided initial value so the first load shows content
+            await CreateAsync(InitialValue ?? string.Empty);
+        }
+    }
+}

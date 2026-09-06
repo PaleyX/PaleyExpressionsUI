@@ -1,0 +1,6 @@
+@ExpressionService_HostAddress = http://localhost:5278
+
+GET {{ExpressionService_HostAddress}}/expression/
+Accept: application/json
+
+###

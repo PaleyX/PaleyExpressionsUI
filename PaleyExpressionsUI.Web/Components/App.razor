@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["PaleyExpressionsUI.Web.styles.css"]" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
+    <!-- Textarea helper to accept TABs and use monospace font -->
+    <script src="/js/textareaTabs.js"></script>
+    <script>
+            window.highlightExpression = () => {
+                Prism.highlightAll();
+            };
+            window.clearSelection = () => {
+                try {
+                    if (window.getSelection) {
+                        const s = window.getSelection();
+                        if (s && s.removeAllRanges) s.removeAllRanges();
+                    } else if (document.selection) {
+                        document.selection.empty();
+                    }
+                } catch (e) { /* ignore */ }
+            };
+    </script>
+    <HeadOutlet />
+
+</head>
+
+<body>
+    <Routes />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"></script>
+    <script src="/js/aceInterop.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

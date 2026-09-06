@@ -1,0 +1,42 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">PaleyExpressionsUI</a>
+    </div>
+</div>
+
+<!-- 
+This is a hack to make the nav menu work on mobile devices. 
+The checkbox is hidden and the nav-scrollable div is used to toggle the checkbox when clicked. 
+This allows the nav menu to be closed when a link is clicked.
+On a desktop device, the nav menu is always visible and the checkbox is not needed
+unless the browser is narrowed
+-->
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="expression">
+                <span class="bi bi-list-nested" aria-hidden="true"></span> Expression
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="help">
+                <span class="bi bi-question-circle-fill" aria-hidden="true"></span> Help
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="about">
+                <span class="bi bi-info-circle-fill" aria-hidden="true"></span> About
+            </NavLink>
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,462 @@
+﻿@page "/expression"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Web
+@rendermode InteractiveServer
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 5)]
+
+@inject ExpressionApiClient ExpressionApi
+@inject IJSRuntime JS
+@using PaleyExpressionsUI.Web.Components.Shared
+
+<PageTitle>Expression Evaluator</PageTitle>
+
+<style>
+    /* override the css here - doesn't work if in the css file*/
+    .expression-input {
+        /* Use a fixed-width programming font for the expression input */
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", "Courier New", monospace !important;
+        font-weight: bold;
+    }
+
+    .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px; /* space between children */
+        /*padding: 1rem;*/ /* space inside container */
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+
+        <!-- Main card -->
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <h1 class="card-title mb-4">Expression Evaluator</h1>
+
+                    <EditForm Model="@formModel" OnValidSubmit="@HandleValidSubmit">
+                        <DataAnnotationsValidator />
+
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <button class='@( "nav-link" + (activeTab == "expression" ? " active" : "") )' type='button' @onclick="ClickSelectExpression">Expression</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class='@( "nav-link" + (activeTab == "code" ? " active" : "") )' type='button' @onclick="ClickSelectCode">C# Code</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content mt-3">
+                            @if (activeTab == "expression")
+                            {
+                                <div>
+                                    <label class="form-label">Expression</label>
+
+                                    <div class="expression-row">
+                                        <InputTextArea @bind-Value="formModel.Expression"
+                                                   class="form-control expression-input"
+                                                   spellcheck="false"
+                                                   @oninput="ClearResult"
+                                                   Rows="3"/>
+                                        <stack class="stack">
+                                            <button type="submit"
+                                                    class="btn btn-primary ms-2"
+                                                    disabled="@isLoading">
+                                                @(isLoading ? "Evaluating..." : "Evaluate")
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary ms-2"
+                                                    @onclick="ClearExpression">
+                                                <span class="bi bi-x-lg"></span>
+                                            </button>
+                                        </stack>
+                                    </div>
+
+                                    <ValidationMessage For="@(() => formModel.Expression)" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label mb-0">C# Code</label>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" style="padding:0.25rem 0.4rem;" @onclick="ClearCode">Clear</button>
+                                    </div>
+
+                                    <AceEditor @ref="codeEditorRef" Id="codeEditor" Height="18rem" InitialValue="@codeEditorText" />
+
+                                    <div class="form-text mt-2">The C# code entered here will be sent to the expression evaluation service as plain text and used to register user-defined functions.</div>
+                                </div>
+                            }
+                        </div>
+
+                    </EditForm>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-3">
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        <hr />
+
+                        <h5>Result</h5>
+
+                        <pre class="bg-light p-3 rounded border">
+                            <code class="language-javascript">@result</code>
+                        </pre>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right side: examples + variables -->
+        <div class="col-lg-4">
+
+            <!-- Examples -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Example Expressions</h5>
+
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Expression</th>
+                                <th style="width:40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var example in exampleExpressions)
+                            {
+                                <tr>
+                                    <td class="align-middle">
+                                        <code class="language-javascript">@example</code>
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        <button class="btn btn-sm btn-outline-primary run-btn"
+                                                title="Run"
+                                        @onclick="async () => await InsertExample(example)">
+                                            <span class="bi bi-play-fill"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Variables -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">Variables</h5>
+
+                        <button class="btn btn-sm btn-outline-secondary"
+                                style="padding: 0.25rem 0.4rem;"
+                                @onclick="AddVariable">
+                            <span class="bi bi-plus-lg"></span>
+                        </button>
+                    </div>
+
+                    <table class="table table-sm variables-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th style="width:40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in variables)
+                            {
+                                <tr>
+                                    <td class="align-middle">
+                                        <InputText @bind-Value="v.Name"
+                                                   class="form-control" />
+                                    </td>
+                                    <td class="align-middle">
+                                        <InputText @bind-Value="v.Value"
+                                                   class="form-control" />
+                                    </td>
+                                    <td class="align-middle text-end variable-delete-cell">
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveVariable(v)">
+                                            <span class="bi bi-trash"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@code {
+    public class MyFormModel
+    {
+        [Required(ErrorMessage = "Expression is required.")]
+        [StringLength(500, ErrorMessage = "Max 500 characters allowed.")]
+        public string Expression { get; set; } = string.Empty;
+    }
+
+    public class VariableEntry
+    {
+        public string Name { get; set; } = "";
+        public string Value { get; set; } = "";
+    }
+
+    private MyFormModel formModel = new();
+    private string result = string.Empty;
+    private string? errorMessage;
+    private bool isLoading;
+
+    private List<VariableEntry> variables =
+    [
+        new VariableEntry { Name = "x", Value = "42" },
+        new VariableEntry { Name = "y", Value = "3.14" },
+        new VariableEntry { Name = "s", Value = "hello" }
+    ];
+
+    private readonly List<string> exampleExpressions =
+    [
+        "1 + 2 * 3.98",
+        "(10 / 2) + 7",
+        "upper(\"hello\") + \" world\"",
+        "lower(\"HELLO\")",
+        "abs(-42)",
+        "iif(5>3+1, \"yes\", \"no\")"
+    ];
+
+    private async Task HandleValidSubmit()
+    {
+        isLoading = true;
+        errorMessage = null;
+        result = string.Empty;
+
+        try
+        {
+            // If we're using the Ace editor, get its current value before submitting
+            try
+            {
+                if (codeEditorRef != null)
+                {
+                    var editorText = await codeEditorRef.GetValueAsync();
+                    if (editorText != null)
+                        codeEditorText = editorText;
+                }
+            }
+            catch
+            {
+                // ignore JS interop errors
+            }
+
+            var variableDict = variables
+                .Where(v => !string.IsNullOrWhiteSpace(v.Name))
+                .ToDictionary(
+                    v => v.Name,
+                    v => (object?)ConvertValue(v.Value)
+                );
+
+            result = await ExpressionApi.GetExpressionAsync(
+                formModel.Expression,
+                variableDict,
+                codeEditorText
+            );
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+        await JS.InvokeVoidAsync("highlightExpression");
+    }
+
+    private object? ConvertValue(string raw)
+    {
+        if (double.TryParse(raw, out var number))
+            return number;
+
+        if (bool.TryParse(raw, out var boolean))
+            return boolean;
+
+        if (raw.Equals("null", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return raw;
+    }
+
+    private void ClearResult(ChangeEventArgs _)
+    {
+        result = string.Empty;
+        errorMessage = null;
+    }
+
+    private async Task InsertExample(string example)
+    {
+        // Try to save current editor contents so switching or re-rendering doesn't lose them
+        await SaveEditorAsync();
+
+        if(!string.IsNullOrWhiteSpace(formModel.Expression))
+        {
+            formModel.Expression = formModel.Expression + Environment.NewLine;
+        }
+
+        formModel.Expression = formModel.Expression + example;
+        result = string.Empty;
+        errorMessage = null;
+
+        // Ensure UI updates promptly
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveEditorAsync()
+    {
+        if (tabHandlerAttached && codeEditorRef != null)
+        {
+            try
+            {
+                var editorText = await codeEditorRef.GetValueAsync();
+                if (editorText != null)
+                    codeEditorText = editorText;
+            }
+            catch { }
+        }
+    }
+
+    private string activeTab = "expression";
+    private string codeEditorText = @"using PaleyExpressions;
+
+public static class Functions
+{
+    [Function(""substr"")]
+    public static string Substr(string text, double start, double length)
+    {
+        return text[(int)start..(int)(start + length)];
+    }
+}";
+
+    private bool tabHandlerAttached = false;
+    private AceEditor? codeEditorRef;
+
+    private async Task SelectTab(string tab)
+    {
+        activeTab = tab;
+        ClearResult((ChangeEventArgs?)null);
+        // Don't call JS here; wait for the render cycle and let OnAfterRenderAsync
+        // initialize the Ace editor when the Code tab is actually in the DOM.
+        // When leaving the code tab, pull the latest text from the Ace editor
+        if (tab == "expression" && tabHandlerAttached && codeEditorRef != null)
+        {
+            try
+            {
+                var editorText = await codeEditorRef.GetValueAsync();
+                if (editorText != null)
+                    codeEditorText = editorText;
+            }
+            catch { }
+        }
+    }
+
+    private async Task ClearCode()
+    {
+        codeEditorText = string.Empty;
+        result = string.Empty;
+        errorMessage = null;
+        try
+        {
+            if (codeEditorRef != null)
+                await codeEditorRef.SetValueAsync(string.Empty);
+        }
+        catch { }
+    }
+
+    private async Task ClickSelectExpression()
+    {
+        await SelectTab("expression");
+    }
+
+    private async Task ClickSelectCode()
+    {
+        await SelectTab("code");
+    }
+
+
+
+    private void AddVariable()
+    {
+        variables.Add(new VariableEntry());
+    }
+
+    private void RemoveVariable(VariableEntry entry)
+    {
+        variables.Remove(entry);
+    }
+
+    private void ClearExpression()
+    {
+        formModel.Expression = string.Empty;
+        result = string.Empty;
+        errorMessage = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Only run highlighting and selection clearing on first render to avoid
+        // disturbing focus while the user types (calling these on every render
+        // caused input to lose focus).
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("highlightExpression");
+            await JS.InvokeVoidAsync("clearSelection");
+        }
+        // Ensure the Ace editor is created when the Code tab becomes visible.
+        if (activeTab == "code")
+        {
+            try
+            {
+                if (!tabHandlerAttached)
+                {
+                    if (codeEditorRef != null)
+                    {
+                        await codeEditorRef.SetValueAsync(codeEditorText ?? string.Empty);
+                        tabHandlerAttached = true;
+                    }
+                }
+                else
+                {
+                    if (codeEditorRef != null)
+                    {
+                        try { await codeEditorRef.SetValueAsync(codeEditorText ?? string.Empty); } catch { }
+                        try { await codeEditorRef.ResizeAsync(); } catch { }
+                        try { await codeEditorRef.FocusAsync(); } catch { }
+                    }
+                }
+            }
+            catch { }
+        }
+    }
+
+}

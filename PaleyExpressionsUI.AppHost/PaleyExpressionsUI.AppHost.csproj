@@ -1,0 +1,22 @@
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>c1bf47d2-b30a-4d8f-bba5-5bd25be1f0b6</UserSecretsId>
+  </PropertyGroup>
+
+	<ItemGroup>
+        <PackageReference Include="MessagePack" Version="3.1.8" />
+        <PackageReference Include="MessagePack.Annotations" Version="3.1.8" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+    <ProjectReference Include="..\PaleyExpressionsUI.ExpressionService\PaleyExpressionsUI.ExpressionService.csproj" />
+    <ProjectReference Include="..\PaleyExpressionsUI.Web\PaleyExpressionsUI.Web.csproj" />
+  </ItemGroup>
+
+</Project>

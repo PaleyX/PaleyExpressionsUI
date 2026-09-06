@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="PaleyExpressionsUI.AppHost/PaleyExpressionsUI.AppHost.csproj" />
+  <Project Path="PaleyExpressionsUI.ExpressionService/PaleyExpressionsUI.ExpressionService.csproj" />
+  <Project Path="PaleyExpressionsUI.ServiceDefaults/PaleyExpressionsUI.ServiceDefaults.csproj" />
+  <Project Path="PaleyExpressionsUI.Tests/PaleyExpressionsUI.Tests.csproj" />
+  <Project Path="PaleyExpressionsUI.Web/PaleyExpressionsUI.Web.csproj" />
+</Solution>

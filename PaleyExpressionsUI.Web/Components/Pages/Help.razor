@@ -1,0 +1,121 @@
+﻿@page "/help"
+@inject ExpressionApiClient ExpressionsApi;
+
+<style>
+    .card {
+        margin-bottom: 1rem;
+    }
+</style>
+
+<h3>Help</h3>
+
+<div class="card">
+    <div class="card-header">Operator Reference</div>
+    <div class="card-body">
+        <table class="table">
+            <colgroup>
+                <col style="width: 15%" />
+                <col style="width: 45%" />
+                <col style="width: 25%" />
+                <col style="width: 15%" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Operator</th>
+                    <th>Explanation</th>
+                    <th>Example</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in operators)
+                {
+                    <tr>
+                        <td>@entry.Symbol</td>
+                        <td>@entry.Explanation</td>
+                        <td>@entry.Example</td>
+                        <td>@entry.Result</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Built-in Functions</div>
+    <div class="card-body">
+        @if (builtins == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+            <table class="table">
+                <colgroup>
+                    <col style="width: 15%" />
+                    <col style="width: 10%" />
+                    <col style="width: 85%" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Returns</th>
+                        <th>Signature</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var builtin in builtins)
+                    {
+                        <tr>
+                            <td>@builtin.Name</td>
+                            <td>@builtin.ReturnType</td>
+                            <td>@builtin.Signature</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    record Operator(string Symbol, 
+                    string Explanation, 
+                    string Example,
+                    string Result) { }
+
+    private Operator[] operators =>
+    [
+        new ("+", "numeric addition", "5 + 3", "8" ),
+        new ("+", "string concatenation", "\"Hello, \" + \"World!\"", "\"Hello, World!\"" ),
+        new ("-", "numeric subtraction", "5 - 3", "2" ),
+        new ("-", "unary minus", "-5", "-5"),
+        new ("*", "numeric multiplication", "5 * 3", "15" ),
+        new ("/", "numeric division", "5 / 3", "1.67" ),
+        new ("%", "modulus (remainder)", "5 % 3", "2" ),
+        new ("(  )", "grouping operator", "(5 + 3) * 2", "16" ),
+        new ("<<", "left shift (number)", "5 << 2", "20" ),
+        new (">>", "right shift (number)", "5 >> 2", "1" ),
+        new ("<<", "left shift (string)", "\"Hello\" << 1", "\"ello\"" ),
+        new (">>", "right shift (string)", "\"Hello\" >> 1", "\"Hell\"" ),
+        new ("==", "equality comparison", "5 == 3", "false" ),
+        new ("!=", "inequality comparison", "5 != 3", "true" ),
+        new ("<", "less than comparison", "5 < 3", "false" ),
+        new (">", "greater than comparison", "5 > 3", "true" ),
+        new ("<=", "less than or equal comparison", "5 <= 3", "false" ), 
+        new (">=", "greater than or equal comparison", "5 >= 3", "true" ),
+        new ("and", "logical AND", "true and false", "false" ),
+        new ("or", "logical OR", "true or false", "true" ),
+        new ("!", "logical NOT", "!true", "false" ),
+        new ("&", "bitwise AND", "5 & 3", "1" ),
+        new ("|", "bitwise OR", "5 | 3", "7" )
+    ];
+
+    private BuiltinDetails[]? builtins;
+
+    protected override async Task OnInitializedAsync()
+    {
+        builtins = await ExpressionsApi.GetBuiltinsAsync();
+    }
+}
