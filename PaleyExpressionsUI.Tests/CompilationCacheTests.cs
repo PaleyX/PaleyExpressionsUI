@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using PaleyExpressionsUI.ExpressionService;
 
 namespace PaleyExpressionsUI.Tests;

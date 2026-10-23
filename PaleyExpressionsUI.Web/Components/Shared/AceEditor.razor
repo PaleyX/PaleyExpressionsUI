@@ -1,5 +1,4 @@
 @namespace PaleyExpressionsUI.Web.Components.Shared
-@using Microsoft.JSInterop
 @inject IJSRuntime JS
 
 <div @ref="editorDiv" id="@Id" class="form-control code-textarea" style="height:@Height;"></div>
@@ -16,15 +15,6 @@
 
     private ElementReference editorDiv;
     private bool created = false;
-
-    public async Task CreateAsync(string initialValue = "")
-    {
-        if (!created)
-        {
-            await JS.InvokeVoidAsync("aceInterop.create", Id, initialValue ?? "");
-            created = true;
-        }
-    }
 
     public ValueTask<string?> GetValueAsync()
         => JS.InvokeAsync<string?>("aceInterop.getValue", Id);
@@ -47,6 +37,15 @@
         {
             // Create the editor with the provided initial value so the first load shows content
             await CreateAsync(InitialValue ?? string.Empty);
+        }
+    }
+
+    private async Task CreateAsync(string initialValue = "")
+    {
+        if (!created)
+        {
+            await JS.InvokeVoidAsync("aceInterop.create", Id, initialValue ?? "");
+            created = true;
         }
     }
 }
