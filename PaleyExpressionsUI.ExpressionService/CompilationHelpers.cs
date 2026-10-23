@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -145,20 +144,24 @@ internal static class CompilationCache
                     ? diagnostic.Location.GetLineSpan().ToString()
                     : "(no source)";
 
+                // for structured logging, we can use a placeholder and pass the message as a property
+                // see: https://www.codevra.org/csharp/csharp-structured-logging-ilogger
+                const string placeHolder = "{Diagnostic}";
+
                 var message = $"{diagnostic.Id}: {diagnostic.GetMessage()} ({location})";
                 switch (diagnostic.Severity)
                 {
                     case DiagnosticSeverity.Error:
-                        logger.LogError("{Diagnostic}", message);
+                        logger.LogError(placeHolder, message);
                         break;
                     case DiagnosticSeverity.Warning:
-                        logger.LogWarning("{Diagnostic}", message);
+                        logger.LogWarning(placeHolder, message);
                         break;
                     case DiagnosticSeverity.Info:
-                        logger.LogInformation("{Diagnostic}", message);
+                        logger.LogInformation(placeHolder, message);
                         break;
                     default:
-                        logger.LogDebug("{Diagnostic}", message);
+                        logger.LogDebug(placeHolder, message);
                         break;
                 }
             }
